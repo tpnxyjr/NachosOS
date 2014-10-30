@@ -46,7 +46,7 @@ int FibbonacciHelper(int n)
 
 void Fibbonacci(int n)
 {
-	int x =FibbonacciHelper(n);
+	FibbonacciHelper(n);
 	printf("%s%s", "--- Child Complete ", "\n");
 }
 
