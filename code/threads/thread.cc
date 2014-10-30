@@ -56,7 +56,7 @@ Thread::Thread(char* threadName, int join)
 #ifdef USER_PROGRAM
     space = NULL;
 #endif	
-    sem = new Semaphore("someName", 0);
+    sem = NULL;
     delaySem = new Semaphore("delaySem", 0);
 }
 
@@ -131,13 +131,24 @@ Thread::Fork(VoidFunctionPtr func, int arg)
 void 
 Thread::Join()
 {
+        delete this->sem;
+	printf("%s%p\n", "---> Parent sem address", currentThread->sem);
+	printf("%s%p\n", "---> child sem address ", this->sem);
+
+
 	// We must have this = child thread and currentThread=Parent
 	ASSERT(this != currentThread);	
 	ASSERT(this->joinable);
 	DEBUG('j', "[THREAD-JOIN]: Waiting end of Thread %s...\n", getName());
 
-	// The parents sem now blocks
+	// Allow the child to unblock the parent by giving its sem control
+	this->sem = currentThread->sem;
+
+	// The parents sem now blocks	
+	printf("%s%p\n", "++++ Locking Sem ", currentThread->sem);
 	currentThread->sem->P();
+	printf("%s%p\n", "++++ Parent Thread now Active! ", currentThread->sem);
+
 
 	// Allow delaySem to release so that this child thread may finish
 	//this->delaySem->V();
@@ -145,8 +156,6 @@ Thread::Join()
 	// Mark that the child thread has been joined and is no longer joinable
 	//this->joinable = 0;
 
-	// Allow the child to unblock the parent by giving its sem control
-	this->sem = currentThread->sem;
 }
 
 //----------------------------------------------------------------------
@@ -209,6 +218,7 @@ Thread::Finish ()
     //if(this->sem != NULL)
     {
     	this->sem->V();
+	printf("%s%p\n", "++++ Releasing sem ", this->sem);
     }
 
 

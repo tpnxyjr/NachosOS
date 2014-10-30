@@ -46,6 +46,7 @@ public:
 
     void P();	 // these are the only operations on a semaphore
     void V();	 // they are both *atomic*
+    int getValue();
 
 private:
     char* name;        // useful for debugging
