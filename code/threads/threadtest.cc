@@ -47,7 +47,7 @@ int FibbonacciHelper(int n)
 void Fibbonacci(int n)
 {
 	int x =FibbonacciHelper(n);
-	printf("%s%d%s", "--- Fibbonacci returns ", x, "\n");
+	printf("%s%s", "--- Child Complete ", "\n");
 }
 
 
@@ -72,6 +72,7 @@ ThreadTest1()
 void ThreadTest100()
 {
 	printf("%s", "--------------------------------\n");
+
 
 	Thread *child = new Thread("child", 1);
 	child->Fork(Fibbonacci, 39);

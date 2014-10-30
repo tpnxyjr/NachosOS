@@ -76,7 +76,8 @@ Thread::Thread(char* threadName, int join)
 Thread::~Thread()
 {
     DEBUG('t', "Deleting thread \"%s\"\n", name);
-    delete this->sem;
+    if(this->sem)
+    	delete this->sem;
     delete this->delaySem;
 
     ASSERT(this != currentThread);
@@ -131,7 +132,6 @@ Thread::Fork(VoidFunctionPtr func, int arg)
 void 
 Thread::Join()
 {
-        delete this->sem;
 	printf("%s%p\n", "---> Parent sem address", currentThread->sem);
 	printf("%s%p\n", "---> child sem address ", this->sem);
 
@@ -217,7 +217,8 @@ Thread::Finish ()
     // Release the semaphore so that threads pending on this semaphore can proceed
     //if(this->sem != NULL)
     {
-    	this->sem->V();
+        if(sem->getValue() != 0)
+    		this->sem->V();
 	printf("%s%p\n", "++++ Releasing sem ", this->sem);
     }
 
