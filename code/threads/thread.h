@@ -39,6 +39,7 @@
 
 #include "copyright.h"
 #include "utility.h"
+#include "synch.h"
 
 #ifdef USER_PROGRAM
 #include "machine.h"
@@ -73,6 +74,8 @@ extern void ThreadPrint(int arg);
 //  Some threads also belong to a user address space; threads
 //  that only run in the kernel have a NULL address space.
 
+class Semaphore;
+
 class Thread {
 private:
     // NOTE: DO NOT CHANGE the order of these first two members.
@@ -82,6 +85,7 @@ private:
 
 public:
     Thread(char* debugName);		// initialize a Thread
+    Thread(char* debugName, int join);
     ~Thread(); 				// deallocate a Thread
     // NOTE -- thread being deleted
     // must not be running when delete
@@ -90,6 +94,9 @@ public:
     // basic thread operations
 
     void Fork(VoidFunctionPtr func, int arg); 	// Make thread run (*func)(arg)
+    void Join();                                // Wait for thread to finish
+    // caller blocks
+
     void Yield();  				// Relinquish the CPU if any
     // other thread is runnable
     void Sleep();  				// Put the thread to sleep and
@@ -116,10 +123,13 @@ private:
     // (If NULL, don't deallocate stack)
     ThreadStatus status;		// ready, running or blocked
     char* name;
-
     void StackAllocate(VoidFunctionPtr func, int arg);
     // Allocate a stack for thread.
     // Used internally by Fork()
+    int joinable;
+    Semaphore *sem;
+    Semaphore *delaySem; //child needs to delay being deleted until join is called by it
+
 
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers --

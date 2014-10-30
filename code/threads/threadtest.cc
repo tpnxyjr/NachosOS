@@ -35,6 +35,22 @@ SimpleThread(int which)
     }
 }
 
+int FibbonacciHelper(int n)
+{
+	if(n <= 1)
+		return n;
+	else
+		return FibbonacciHelper(n-1) + FibbonacciHelper(n-2);
+
+}
+
+void Fibbonacci(int n)
+{
+	int x =FibbonacciHelper(n);
+	printf("%s%d%s", "--- Fibbonacci returns ", x, "\n");
+}
+
+
 //----------------------------------------------------------------------
 // ThreadTest1
 // 	Set up a ping-pong between two threads, by forking a thread
@@ -52,6 +68,26 @@ ThreadTest1()
     SimpleThread(0);
 }
 
+
+void ThreadTest100()
+{
+	printf("%s", "--------------------------------\n");
+
+	Thread *child = new Thread("child", 1);
+	child->Fork(Fibbonacci, 39);
+	printf("%s", "This should print 1st\n");
+
+	child->Join();
+
+	printf("%s", "This should print 2nd\n");
+
+
+
+
+
+	printf("%s", "--------------------------------\n");
+}
+
 //----------------------------------------------------------------------
 // ThreadTest
 // 	Invoke a test routine.
@@ -64,6 +100,9 @@ ThreadTest()
     case 1:
         ThreadTest1();
         break;
+    case 100:
+    	ThreadTest100();
+	break;
     default:
         printf("No test specified.\n");
         break;

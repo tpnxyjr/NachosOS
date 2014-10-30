@@ -38,10 +38,28 @@ Thread::Thread(char* threadName)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
+    joinable = 0;
 #ifdef USER_PROGRAM
     space = NULL;
 #endif
+    sem = new Semaphore("someName", 0);
+    delaySem = new Semaphore("delaySem", 0);
 }
+
+Thread::Thread(char* threadName, int join)
+{
+    name = threadName;
+    stackTop = NULL;
+    stack = NULL;
+    status = JUST_CREATED;
+    joinable = join; 
+#ifdef USER_PROGRAM
+    space = NULL;
+#endif	
+    sem = new Semaphore("someName", 0);
+    delaySem = new Semaphore("delaySem", 0);
+}
+
 
 //----------------------------------------------------------------------
 // Thread::~Thread
@@ -58,6 +76,8 @@ Thread::Thread(char* threadName)
 Thread::~Thread()
 {
     DEBUG('t', "Deleting thread \"%s\"\n", name);
+    delete this->sem;
+    delete this->delaySem;
 
     ASSERT(this != currentThread);
     if (stack != NULL)
@@ -96,6 +116,37 @@ Thread::Fork(VoidFunctionPtr func, int arg)
     scheduler->ReadyToRun(this);	// ReadyToRun assumes that interrupts
     // are disabled!
     (void) interrupt->SetLevel(oldLevel);
+}
+
+
+//----------------------------------------------------------------------
+// Thread::Join
+// 	The join operation causes the calling thread to wait until the thread 
+// 	that is being joined terminates. So if Thread1 calls Join(Thread2) 
+// 	Thread1 is blocked until Thread2 finishes. If Thread2 has already 
+// 	finished or does not exist then Thread1 simply continues its 
+// 	execution.//
+//----------------------------------------------------------------------
+
+void 
+Thread::Join()
+{
+	// We must have this = child thread and currentThread=Parent
+	ASSERT(this != currentThread);	
+	ASSERT(this->joinable);
+	DEBUG('j', "[THREAD-JOIN]: Waiting end of Thread %s...\n", getName());
+
+	// The parents sem now blocks
+	currentThread->sem->P();
+
+	// Allow delaySem to release so that this child thread may finish
+	//this->delaySem->V();
+
+	// Mark that the child thread has been joined and is no longer joinable
+	//this->joinable = 0;
+
+	// Allow the child to unblock the parent by giving its sem control
+	this->sem = currentThread->sem;
 }
 
 //----------------------------------------------------------------------
@@ -145,8 +196,21 @@ Thread::Finish ()
 {
     (void) interrupt->SetLevel(IntOff);
     ASSERT(this == currentThread);
-
     DEBUG('t', "Finishing thread \"%s\"\n", getName());
+
+    // If this child thread has not been joined
+    //if(this->joinable != 0)
+    {
+    	// Block the child thread so the parent may later call join
+    	//this->delaySem->P();
+    }
+
+    // Release the semaphore so that threads pending on this semaphore can proceed
+    //if(this->sem != NULL)
+    {
+    	this->sem->V();
+    }
+
 
     threadToBeDestroyed = currentThread;
     Sleep();					// invokes SWITCH
