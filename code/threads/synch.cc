@@ -90,16 +90,14 @@ Semaphore::V()
     Thread *thread;
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
 
+    //if(value >= 0)
+    {
     thread = (Thread *)queue->Remove();
     if (thread != NULL)	   // make thread ready, consuming the V immediately
         scheduler->ReadyToRun(thread);
     value++;
+    }
     (void) interrupt->SetLevel(oldLevel);
-}
-
-int Semaphore::getValue()
-{
-	return this->value;
 }
 
 // Dummy functions -- so we can compile our later assignments

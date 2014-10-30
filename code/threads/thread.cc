@@ -217,12 +217,9 @@ Thread::Finish ()
     // Release the semaphore so that threads pending on this semaphore can proceed
     //if(this->sem != NULL)
     {
-    	printf("SemVal = %d\n", this->sem->getValue());
-
-        if(this->joinable)
+        if(this->joinable && this->sem)
     		this->sem->V();
-	printf("SemVal = %d\n", this->sem->getValue());
-	printf("%s%p\n", "++++ Releasing sem - semValue=", this->sem);
+	//printf("%s%p\n", "++++ Releasing sem - semValue=", this->sem);
     }
 
 
