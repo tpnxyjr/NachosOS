@@ -33,6 +33,8 @@
 *.swo
 *.swn
 *.swm
+*.swl
+*.sw*
 
 # wriazati
 run

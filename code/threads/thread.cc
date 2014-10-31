@@ -43,7 +43,8 @@ Thread::Thread(char* threadName)
     space = NULL;
 #endif
     sem = new Semaphore("someName", 0);
-    delaySem = new Semaphore("delaySem", 0);
+    secondarySem = NULL;
+    delaySem = NULL;
     joined = false;
 }
 
@@ -58,6 +59,7 @@ Thread::Thread(char* threadName, int join)
     space = NULL;
 #endif	
     sem = NULL;
+    secondarySem = new Semaphore("",0);
     delaySem = NULL;
     joined = false;
     
@@ -135,8 +137,8 @@ Thread::Fork(VoidFunctionPtr func, int arg)
 void 
 Thread::Join()
 {
-	printf("%s%p\n", "---> Parent sem address", currentThread->sem);
-	printf("%s%p\n", "---> child sem address ", this->sem);
+	//printf("%s%p\n", "---> Parent sem address", currentThread->sem);
+	//printf("%s%p\n", "---> child sem address ", this->sem);
 
 
 	// We must have this = child thread and currentThread=Parent
@@ -145,17 +147,28 @@ Thread::Join()
 	DEBUG('j', "[THREAD-JOIN]: Waiting end of Thread %s...\n", getName());
 
 	// Allow the child to unblock the parent by giving its sem control
-	this->sem = currentThread->sem;
+	if(currentThread->joinable)
+		this->sem = currentThread->secondarySem;	
+	else
+		this->sem = currentThread->sem;
 	this->joined = true;
 
 	// The parents sem now blocks	
-	currentThread->sem->P();
-	printf("%s%p\n", "++++ Parent Thread now Active! ", currentThread->sem);
+	if(currentThread->joinable)
+		currentThread->secondarySem->P();
+	else
+		currentThread->sem->P();
+	//printf("%s%p\n", "++++ Parent Thread now Active! ", currentThread->sem);
+
+
+	/* This is where the parent thread resumes after it has been freed in childs finish() */
+	//printf("%s%p\n", "+++> Parent sem address", currentThread->sem);
+	//printf("%s%p\n", "+++> child sem address ", this->sem);
 
 
 	// Allow delaySem to release so that this child thread may finish
-	ASSERT(this->delaySem);
-	this->delaySem->V();
+	if(this->delaySem);
+		this->delaySem->V();
 
 
 }
@@ -187,10 +200,10 @@ Thread::Finish ()
     if(this->joinable && this->sem)
     	this->sem->V();
 
-    // If not joined, block this thread
-    if(this->joined)
+    // If joined, block this thread so parent can finish it
+    if(this->joinable && this->joined)
     {
-    	//Block the child thread so the parent may later call join
+    	//Block the child(current)thread so the parent may later call join
 	this->delaySem = new Semaphore("",0);
     	this->delaySem->P();
     }

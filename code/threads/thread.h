@@ -129,6 +129,7 @@ private:
     int joinable;
     bool joined; 
     Semaphore *sem;
+    Semaphore *secondarySem; // Used when forking off children that create ther 
     Semaphore *delaySem; //child needs to delay being deleted until join is called by it
 
 

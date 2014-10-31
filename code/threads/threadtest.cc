@@ -53,7 +53,27 @@ int FibbonacciHelper(int n)
 void Fibbonacci(int n)
 {
 	FibbonacciHelper(n);
-	printf("%s%s", "X) Child Complete ", "\n");
+//	printf("%s%s", "X) Child Complete ", "\n");
+}
+
+void CreateAThread(int n)
+{
+	if(n == 0)
+	{
+		Thread *child = new Thread("child", 1);
+		printf("%s", "2) Forked thread\n");
+		child->Fork(CreateAThread, 1);
+		child->Join();
+		printf("%s", "5) Join Complete\n");
+
+	}
+	else if (n==1)
+	{
+		printf("%s", "3) Computing Fib\n");
+		Fibbonacci(39);
+		printf("%s", "4) Fib Complete\n");
+	}
+	
 }
 
 
@@ -105,6 +125,22 @@ void ThreadTest101()
 
 }
 
+// Testing nested joins
+void ThreadTest102()
+{
+	printf("%s", "--------------------------------\n");
+	Thread *child = new Thread("child", 1);
+		
+	printf("%s", "1) Forked thread\n");
+	child->Fork(CreateAThread, 0);
+	child->Join();
+	printf("%s", "6) Join Complete\n");
+
+
+
+	printf("%s", "--------------------------------\n");
+}
+
 
 
 
@@ -126,6 +162,9 @@ ThreadTest()
 	break;
     case 101:
     	ThreadTest101();
+	break;
+    case 102:
+    	ThreadTest102();
 	break;
     default:
         printf("No test specified.\n");
