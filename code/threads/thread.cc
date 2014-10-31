@@ -44,6 +44,7 @@ Thread::Thread(char* threadName)
 #endif
     sem = new Semaphore("someName", 0);
     delaySem = new Semaphore("delaySem", 0);
+    joined = false;
 }
 
 Thread::Thread(char* threadName, int join)
@@ -57,7 +58,9 @@ Thread::Thread(char* threadName, int join)
     space = NULL;
 #endif	
     sem = NULL;
-    delaySem = new Semaphore("delaySem", 0);
+    delaySem = NULL;
+    joined = false;
+    
 }
 
 
@@ -143,20 +146,61 @@ Thread::Join()
 
 	// Allow the child to unblock the parent by giving its sem control
 	this->sem = currentThread->sem;
+	this->joined = true;
 
 	// The parents sem now blocks	
-	printf("%s%p\n", "++++ Locking Sem ", currentThread->sem);
 	currentThread->sem->P();
 	printf("%s%p\n", "++++ Parent Thread now Active! ", currentThread->sem);
 
 
 	// Allow delaySem to release so that this child thread may finish
-	//this->delaySem->V();
+	ASSERT(this->delaySem);
+	this->delaySem->V();
 
-	// Mark that the child thread has been joined and is no longer joinable
-	//this->joinable = 0;
 
 }
+
+//----------------------------------------------------------------------
+// Thread::Finish
+// 	Called by ThreadRoot when a thread is done executing the
+//	forked procedure.
+//
+// 	NOTE: we don't immediately de-allocate the thread data structure
+//	or the execution stack, because we're still running in the thread
+//	and we're still on the stack!  Instead, we set "threadToBeDestroyed",
+//	so that Scheduler::Run() will call the destructor, once we're
+//	running in the context of a different thread.
+//
+// 	NOTE: we disable interrupts, so that we don't get a time slice
+//	between setting threadToBeDestroyed, and going to sleep.
+//----------------------------------------------------------------------
+
+//
+void
+Thread::Finish ()
+{
+    (void) interrupt->SetLevel(IntOff);
+    ASSERT(this == currentThread);
+    DEBUG('t', "Finishing thread \"%s\"\n", getName());
+
+    // Release the semaphore so that threads pending on this semaphore can proceed
+    if(this->joinable && this->sem)
+    	this->sem->V();
+
+    // If not joined, block this thread
+    if(this->joined)
+    {
+    	//Block the child thread so the parent may later call join
+	this->delaySem = new Semaphore("",0);
+    	this->delaySem->P();
+    }
+
+    threadToBeDestroyed = currentThread;
+    Sleep();					// invokes SWITCH
+    // not reached
+}
+
+
 
 //----------------------------------------------------------------------
 // Thread::CheckOverflow
@@ -184,49 +228,6 @@ Thread::CheckOverflow()
 #endif
 }
 
-//----------------------------------------------------------------------
-// Thread::Finish
-// 	Called by ThreadRoot when a thread is done executing the
-//	forked procedure.
-//
-// 	NOTE: we don't immediately de-allocate the thread data structure
-//	or the execution stack, because we're still running in the thread
-//	and we're still on the stack!  Instead, we set "threadToBeDestroyed",
-//	so that Scheduler::Run() will call the destructor, once we're
-//	running in the context of a different thread.
-//
-// 	NOTE: we disable interrupts, so that we don't get a time slice
-//	between setting threadToBeDestroyed, and going to sleep.
-//----------------------------------------------------------------------
-
-//
-void
-Thread::Finish ()
-{
-    (void) interrupt->SetLevel(IntOff);
-    ASSERT(this == currentThread);
-    DEBUG('t', "Finishing thread \"%s\"\n", getName());
-
-    // If this child thread has not been joined
-    //if(this->joinable != 0)
-    {
-    	// Block the child thread so the parent may later call join
-    	//this->delaySem->P();
-    }
-
-    // Release the semaphore so that threads pending on this semaphore can proceed
-    //if(this->sem != NULL)
-    {
-        if(this->joinable && this->sem)
-    		this->sem->V();
-	//printf("%s%p\n", "++++ Releasing sem - semValue=", this->sem);
-    }
-
-
-    threadToBeDestroyed = currentThread;
-    Sleep();					// invokes SWITCH
-    // not reached
-}
 
 //----------------------------------------------------------------------
 // Thread::Yield

@@ -127,6 +127,7 @@ private:
     // Allocate a stack for thread.
     // Used internally by Fork()
     int joinable;
+    bool joined; 
     Semaphore *sem;
     Semaphore *delaySem; //child needs to delay being deleted until join is called by it
 

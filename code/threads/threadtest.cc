@@ -35,6 +35,12 @@ SimpleThread(int which)
     }
 }
 
+void DoNothing(int n)
+{
+	printf("%s%s", "X) Nothing Thread Complete", "\n");
+
+}
+
 int FibbonacciHelper(int n)
 {
 	if(n <= 1)
@@ -47,7 +53,7 @@ int FibbonacciHelper(int n)
 void Fibbonacci(int n)
 {
 	FibbonacciHelper(n);
-	printf("%s%s", "2) Child Complete ", "\n");
+	printf("%s%s", "X) Child Complete ", "\n");
 }
 
 
@@ -81,6 +87,26 @@ void ThreadTest100()
 	printf("%s", "--------------------------------\n");
 }
 
+void ThreadTest101()
+{
+	printf("%s", "--------------------------------\n");
+	Thread *child = new Thread("child", 1);
+
+	printf("%s", "1) Forked thread\n");
+	child->Fork(DoNothing, 0);
+
+	printf("%s", "2) Killing Time\n");
+	Fibbonacci(39);
+
+	printf("%s", "3) Time Killed, Calling Join on completed child\n");
+	child->Join();
+
+	printf("%s", "--------------------------------\n");
+
+}
+
+
+
 
 
 //----------------------------------------------------------------------
@@ -97,6 +123,9 @@ ThreadTest()
         break;
     case 100:
     	ThreadTest100();
+	break;
+    case 101:
+    	ThreadTest101();
 	break;
     default:
         printf("No test specified.\n");
