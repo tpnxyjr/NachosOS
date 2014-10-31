@@ -25,6 +25,48 @@ int testnum = 1;
 //	purposes.
 //----------------------------------------------------------------------
 
+void DoNothing(int n)
+{
+//	printf("%s%s", "X) Nothing Thread Complete", "\n");
+
+}
+
+int FibbonacciHelper(int n)
+{
+	if(n <= 1)
+		return n;
+	else
+		return FibbonacciHelper(n-1) + FibbonacciHelper(n-2);
+
+}
+
+void Fibbonacci(int n)
+{
+	FibbonacciHelper(n);
+//	printf("%s%s", "X) Child Complete ", "\n");
+}
+
+void CreateAThread(int n)
+{
+	if(n == 0)
+	{
+		Thread *child = new Thread("child", 1);
+		printf("%s", "2) Forked thread\n");
+		child->Fork(CreateAThread, 1);
+		child->Join();
+		printf("%s", "5) Join Complete\n");
+
+	}
+	else if (n==1)
+	{
+		printf("%s", "3) Computing Fib\n");
+		Fibbonacci(39);
+		printf("%s", "4) Fib Complete\n");
+	}
+	
+}
+
+
 void
 CallingJoin(Thread * thread)
 {
@@ -46,8 +88,8 @@ SimpleThread(int which)
 void
 Joiner(Thread *joinee)
 {
-  currentThread->Yeild();
-  currentThread->Yeild();
+  currentThread->Yield();
+  currentThread->Yield();
 
   printf("Waiting for the Joinee to finish executing.\n");
 

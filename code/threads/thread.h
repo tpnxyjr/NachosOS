@@ -132,7 +132,6 @@ private:
     // Used internally by Fork()
 	bool willBeJoined;
 
-    void StackAllocate(VoidFunctionPtr func, int arg);
     // Allocate a stack for thread.
     // Used internally by Fork()
     int joinable;

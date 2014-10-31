@@ -184,7 +184,7 @@ void Condition::Broadcast(Lock* conditionLock) {
 
 }
 
-ailbox::Mailbox(char* debugName){
+Mailbox::Mailbox(char* debugName){
         name = debugName;
         sent = false;
         received = false;
