@@ -37,13 +37,31 @@ Thread::Thread(char* threadName, int join)
     name = threadName;
     stackTop = NULL;
     stack = NULL;
-	priority = 0;
+    priority = 0;
     status = JUST_CREATED;
-	if(join == 0)willBeJoined=false;
-	else willBeJoined=true;
+    if(join == 0)willBeJoined=false;
+    else willBeJoined=true;
+    
 #ifdef USER_PROGRAM
     space = NULL;
-#endif
+#endif	
+
+    joinable = join; 
+    delaySem = NULL;
+    joined = false;
+    hasBeenForked = false;
+
+    if(join == 0)
+    {
+    	sem = new Semaphore("someName", 0);
+   	 secondarySem = NULL;
+    }
+    else
+    {
+    	sem = NULL;
+    	secondarySem = new Semaphore("",0);
+    }
+    
 }
 
 //----------------------------------------------------------------------
@@ -61,6 +79,13 @@ Thread::Thread(char* threadName, int join)
 Thread::~Thread()
 {
     DEBUG('t', "Deleting thread \"%s\"\n", name);
+
+    if(this->sem)
+    	delete this->sem;
+    if(this->secondarySem)
+	delete this->secondarySem;
+    if(this->delaySem);
+    	delete this->delaySem;
 
     ASSERT(this != currentThread);
     if (stack != NULL)
@@ -93,6 +118,8 @@ Thread::Fork(VoidFunctionPtr func, int arg)
     DEBUG('t', "Forking thread \"%s\" with func = 0x%x, arg = %d\n",
           name, (int) func, arg);
 
+    this->hasBeenForked = true;
+
     StackAllocate(func, arg);
 
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
@@ -100,6 +127,98 @@ Thread::Fork(VoidFunctionPtr func, int arg)
     // are disabled!
     (void) interrupt->SetLevel(oldLevel);
 }
+
+
+//----------------------------------------------------------------------
+// Thread::Join
+// 	The join operation causes the calling thread to wait until the thread 
+// 	that is being joined terminates. So if Thread1 calls Join(Thread2) 
+// 	Thread1 is blocked until Thread2 finishes. If Thread2 has already 
+// 	finished or does not exist then Thread1 simply continues its 
+// 	execution.//
+//----------------------------------------------------------------------
+
+void 
+Thread::Join()
+{
+	//printf("%s%p\n", "---> Parent sem address", currentThread->sem);
+	//printf("%s%p\n", "---> child sem address ", this->sem);
+
+
+	// We must have this = child thread and currentThread=Parent
+	ASSERT(this != currentThread);	
+	ASSERT(this->joinable);
+	ASSERT(!this->joined);
+	ASSERT(this->hasBeenForked);
+	DEBUG('j', "[THREAD-JOIN]: Waiting end of Thread %s...\n", getName());
+
+	// Allow the child to unblock the parent by giving its sem control
+	if(currentThread->joinable)
+		this->sem = currentThread->secondarySem;	
+	else
+		this->sem = currentThread->sem;
+	this->joined = true;
+
+	// The parents sem now blocks	
+	if(currentThread->joinable)
+		currentThread->secondarySem->P();
+	else
+		currentThread->sem->P();
+	//printf("%s%p\n", "++++ Parent Thread now Active! ", currentThread->sem);
+
+
+	/* This is where the parent thread resumes after it has been freed in childs finish() */
+	//printf("%s%p\n", "+++> Parent sem address", currentThread->sem);
+	//printf("%s%p\n", "+++> child sem address ", this->sem);
+
+
+	// Allow delaySem to release so that this child thread may finish
+	if(this->delaySem);
+		this->delaySem->V();
+}
+
+//----------------------------------------------------------------------
+// Thread::Finish
+// 	Called by ThreadRoot when a thread is done executing the
+//	forked procedure.
+//
+// 	NOTE: we don't immediately de-allocate the thread data structure
+//	or the execution stack, because we're still running in the thread
+//	and we're still on the stack!  Instead, we set "threadToBeDestroyed",
+//	so that Scheduler::Run() will call the destructor, once we're
+//	running in the context of a different thread.
+//
+// 	NOTE: we disable interrupts, so that we don't get a time slice
+//	between setting threadToBeDestroyed, and going to sleep.
+//----------------------------------------------------------------------
+
+//
+void
+Thread::Finish ()
+{
+    (void) interrupt->SetLevel(IntOff);
+    ASSERT(this == currentThread);
+
+    DEBUG('t', "Finishing thread \"%s\"\n", getName());
+
+    // Release the semaphore so that threads pending on this semaphore can proceed
+    if(this->joinable && this->sem)
+    	this->sem->V();
+
+    // If joined, block this thread so parent can finish it
+    if(this->joinable && this->joined)
+    {
+    	//Block the child(current)thread so the parent may later call join
+	this->delaySem = new Semaphore("",0);
+    	this->delaySem->P();
+    }
+
+    threadToBeDestroyed = currentThread;
+    Sleep();					// invokes SWITCH
+    // not reached
+}
+
+
 
 //----------------------------------------------------------------------
 // Thread::CheckOverflow
@@ -127,34 +246,6 @@ Thread::CheckOverflow()
 #endif
 }
 
-//----------------------------------------------------------------------
-// Thread::Finish
-// 	Called by ThreadRoot when a thread is done executing the
-//	forked procedure.
-//
-// 	NOTE: we don't immediately de-allocate the thread data structure
-//	or the execution stack, because we're still running in the thread
-//	and we're still on the stack!  Instead, we set "threadToBeDestroyed",
-//	so that Scheduler::Run() will call the destructor, once we're
-//	running in the context of a different thread.
-//
-// 	NOTE: we disable interrupts, so that we don't get a time slice
-//	between setting threadToBeDestroyed, and going to sleep.
-//----------------------------------------------------------------------
-
-//
-void
-Thread::Finish ()
-{
-    (void) interrupt->SetLevel(IntOff);
-    ASSERT(this == currentThread);
-
-    DEBUG('t', "Finishing thread \"%s\"\n", getName());
-
-    threadToBeDestroyed = currentThread;
-    Sleep();					// invokes SWITCH
-    // not reached
-}
 
 //----------------------------------------------------------------------
 // Thread::Yield
@@ -246,13 +337,16 @@ void ThreadPrint(int arg) {
     Thread *t = (Thread *)arg;
     t->Print();
 }
-void Thread::Join(){}
+
+//void Thread::Join(){}
 void Thread::setPriority(int newPriority){
 	priority = newPriority;
 }
 int Thread::getPriority(){
 	return priority;
 }	
+
+
 //----------------------------------------------------------------------
 // Thread::StackAllocate
 //	Allocate and initialize an execution stack.  The stack is
@@ -332,10 +426,5 @@ Thread::RestoreUserState()
 {
     for (int i = 0; i < NumTotalRegs; i++)
         machine->WriteRegister(i, userRegisters[i]);
-}
-void
-Thread::Join()
-{
-	
 }
 #endif

@@ -56,7 +56,10 @@ Scheduler::ReadyToRun (Thread *thread)
     DEBUG('t', "Putting thread %s on ready list.\n", thread->getName());
 
     thread->setStatus(READY);
+
     readyList->SortedInsert((void *)thread,thread->getPriority());
+    //readyList->Append((void *)thread);  //wriazati merge: this got deleted, correct?
+
 }
 
 //----------------------------------------------------------------------

@@ -1,3 +1,4 @@
+
 // synch.cc
 //	Routines for synchronizing threads.  Three kinds of
 //	synchronization routines are defined here: semaphores, locks
@@ -183,7 +184,7 @@ void Condition::Broadcast(Lock* conditionLock) {
 
 }
 
-Mailbox::Mailbox(char* debugName){
+ailbox::Mailbox(char* debugName){
         name = debugName;
         sent = false;
         received = false;
@@ -259,3 +260,4 @@ void Whale::Matchmaker(){
         matchmakers--;
 
 }
+

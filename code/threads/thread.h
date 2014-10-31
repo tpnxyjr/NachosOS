@@ -39,6 +39,7 @@
 
 #include "copyright.h"
 #include "utility.h"
+#include "synch.h"
 
 #ifdef USER_PROGRAM
 #include "machine.h"
@@ -73,6 +74,8 @@ extern void ThreadPrint(int arg);
 //  Some threads also belong to a user address space; threads
 //  that only run in the kernel have a NULL address space.
 
+class Semaphore;
+
 class Thread {
 private:
     // NOTE: DO NOT CHANGE the order of these first two members.
@@ -90,6 +93,9 @@ public:
     // basic thread operations
 
     void Fork(VoidFunctionPtr func, int arg); 	// Make thread run (*func)(arg)
+    void Join();                                // Wait for thread to finish
+    // caller blocks
+
     void Yield();  				// Relinquish the CPU if any
     // other thread is runnable
     void Sleep();  				// Put the thread to sleep and
@@ -107,9 +113,10 @@ public:
     void Print() {
         printf("%s, ", name);
     }
-    void Join();
     void setPriority(int newPriority);
     int getPriority();
+
+
 private:
     // some of the private data for this class is listed above
 
@@ -118,11 +125,24 @@ private:
     // (If NULL, don't deallocate stack)
     ThreadStatus status;		// ready, running or blocked
     char* name;
+    
     int priority;
     void StackAllocate(VoidFunctionPtr func, int arg);
     // Allocate a stack for thread.
     // Used internally by Fork()
 	bool willBeJoined;
+
+    void StackAllocate(VoidFunctionPtr func, int arg);
+    // Allocate a stack for thread.
+    // Used internally by Fork()
+    int joinable;
+    bool joined; 
+    bool hasBeenForked;
+    Semaphore *sem;
+    Semaphore *secondarySem; // Used when forking off children that create ther 
+    Semaphore *delaySem; //child needs to delay being deleted until join is called by it
+
+
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers --
 // one for its state while executing user code, one for its state
