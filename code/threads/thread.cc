@@ -54,14 +54,24 @@ Thread::Thread(char* threadName, int join)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
-    joinable = join; 
 #ifdef USER_PROGRAM
     space = NULL;
 #endif	
-    sem = NULL;
-    secondarySem = new Semaphore("",0);
+
+    joinable = join; 
     delaySem = NULL;
     joined = false;
+
+    if(join == 0)
+    {
+    	sem = new Semaphore("someName", 0);
+   	 secondarySem = NULL;
+    }
+    else
+    {
+    	sem = NULL;
+    	secondarySem = new Semaphore("",0);
+    }
     
 }
 
