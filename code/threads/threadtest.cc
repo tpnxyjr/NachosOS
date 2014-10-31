@@ -234,7 +234,16 @@ ThreadTest104()
 void
 ThreadTest105()
 {
+	printf("%s", "--------------------------------\n");
 
+	printf("%s", "1) Created Thread that is not meant to be joined\n");
+	printf("%s", "2) Calling Join - Failure Expected");
+
+	Thread *child = new Thread("child", 0);
+	child->Fork( Fibbonacci, 39);
+	child->Join();
+
+	printf("%s", "--------------------------------\n");
 }
 
 /* (6) Join is only called on a thread that has forked */

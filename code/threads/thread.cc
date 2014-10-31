@@ -32,23 +32,6 @@
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
 
-Thread::Thread(char* threadName)
-{
-    name = threadName;
-    stackTop = NULL;
-    stack = NULL;
-    status = JUST_CREATED;
-    joinable = 0;
-#ifdef USER_PROGRAM
-    space = NULL;
-#endif
-    sem = new Semaphore("someName", 0);
-    secondarySem = NULL;
-    delaySem = NULL;
-    joined = false;
-    hasBeenForked = false;
-}
-
 Thread::Thread(char* threadName, int join)
 {
     name = threadName;
