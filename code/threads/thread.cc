@@ -46,6 +46,7 @@ Thread::Thread(char* threadName)
     secondarySem = NULL;
     delaySem = NULL;
     joined = false;
+    hasBeenForked = false;
 }
 
 Thread::Thread(char* threadName, int join)
@@ -61,6 +62,7 @@ Thread::Thread(char* threadName, int join)
     joinable = join; 
     delaySem = NULL;
     joined = false;
+    hasBeenForked = false;
 
     if(join == 0)
     {
@@ -126,6 +128,8 @@ Thread::Fork(VoidFunctionPtr func, int arg)
     DEBUG('t', "Forking thread \"%s\" with func = 0x%x, arg = %d\n",
           name, (int) func, arg);
 
+    this->hasBeenForked = true;
+
     StackAllocate(func, arg);
 
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
@@ -154,6 +158,8 @@ Thread::Join()
 	// We must have this = child thread and currentThread=Parent
 	ASSERT(this != currentThread);	
 	ASSERT(this->joinable);
+	ASSERT(!this->joined);
+	ASSERT(this->hasBeenForked);
 	DEBUG('j', "[THREAD-JOIN]: Waiting end of Thread %s...\n", getName());
 
 	// Allow the child to unblock the parent by giving its sem control
