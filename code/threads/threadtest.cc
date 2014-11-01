@@ -382,6 +382,7 @@ ThreadTest()
         break;
     case 2:
 	LockTest1();
+	break;
     case 101:
     	ThreadTest101();
 	break;
