@@ -107,6 +107,7 @@ Lock::Lock(char* debugName) {
 lock = false;	
 }
 Lock::~Lock() {
+	lock = false;
 	delete queue;
 }
 bool Lock::test_and_set (bool *flag) {
@@ -134,11 +135,13 @@ void Lock::Acquire(){
 void Lock::Release() {
     Thread *thread;
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
-    lock = false;
+    if(lock == true){
+    	lock = false;
 
-    thread = (Thread *)queue->Remove();
-    if (thread != NULL)    // make thread ready, consuming the V immediately
-        scheduler->ReadyToRun(thread);
+    	thread = (Thread *)queue->Remove();
+    	if (thread != NULL)    // make thread ready, consuming the V immediately
+        	scheduler->ReadyToRun(thread);
+    }
     (void) interrupt->SetLevel(oldLevel);
 
 }
